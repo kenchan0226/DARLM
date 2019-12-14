@@ -21,6 +21,7 @@ from model.model import *
 from utils.optim import *
 from utils.utils import *
 from utils.config import *
+import numpy as np
 
 
 parser = argparse.ArgumentParser(description='train.py')
@@ -44,15 +45,17 @@ if os.path.exists(opt.config_file):
     config = Config()
     config.load_config(opt.config_file)
 else:
-    print '\n* NO CONFIG FILE *'
+    print('\n* NO CONFIG FILE *')
     sys.exit()
 
 config.set('flag', opt.flag)
 config.set('gpu', opt.gpu)
 config.set('cudnn', opt.cudnn)
 config.set('seed', opt.seed)
-print config.lists()
+print(config.lists())
 del opt
+
+np.random.seed(config['seed'])
 
 if config['gpu'] != -1:
     torch.cuda.manual_seed(config['seed'])
@@ -192,17 +195,17 @@ def eval(epoch, models, data, id2token_dict, flag=None):
 
         ## ton of print
         total_count += batch_size
-        total_diff_losses += differentiated_loss.data[0] * batch_size
-        total_disc_losses += d_loss.data[0] * batch_size
-        total_enpys += torch.mean(c0_entropy).data[0] * batch_size
+        total_diff_losses += differentiated_loss.item() * batch_size
+        total_disc_losses += d_loss.item() * batch_size
+        total_enpys += torch.mean(c0_entropy).item() * batch_size
         for _i in range(config['hop']):
             # for print
             attns_datas[_i] += [cs_attns[_i].cpu().data]
             prob_pred_datas[_i] += [cs_outputs[_i].cpu().data]
             losses_datas[_i] += [cs_losses[_i].cpu().data]
             
-            right = (y_data.squeeze(1)==cs_outputs[_i].max(1)[1]).sum().data[0]
-            loss_float = cs_losses[_i].data[0]
+            right = (y_data.squeeze(1)==cs_outputs[_i].max(1)[1]).sum().item()
+            loss_float = cs_losses[_i].squeeze(1).mean().item()
 
             total_right_counts[_i] += right
             total_losses[_i] += loss_float*batch_size
@@ -212,8 +215,8 @@ def eval(epoch, models, data, id2token_dict, flag=None):
             total_ratios[_i] += gold_c_num
 
         # discriminator
-        right = (loss_dis.max(1)[1]==d_outputs.max(1)[1]).sum().data[0]
-        loss_float = d_loss.data[0]
+        right = (loss_dis.max(1)[1]==d_outputs.max(1)[1]).sum().item()
+        loss_float = d_loss.item()
         total_right_counts[_i + 1] += right
         total_losses[_i + 1] += loss_float*batch_size
 
@@ -379,21 +382,21 @@ def train_epoch(epoch, optims, models, train_data,
         ## ton of print
         total_count += batch_size
         report_count += batch_size
-        total_diff_losses += differentiated_loss.data[0] * batch_size
-        total_disc_losses += d_loss.data[0] * batch_size
-        total_enpys += torch.mean(c0_entropy).data[0] * batch_size
-        report_diff_losses += differentiated_loss.data[0] * batch_size
-        report_disc_losses += d_loss.data[0] * batch_size
-        report_enpys += torch.mean(c0_entropy).data[0] * batch_size
-        report_c0_losses += torch.mean(cs_losses[0]).data[0] * batch_size
+        total_diff_losses += differentiated_loss.item() * batch_size
+        total_disc_losses += d_loss.item() * batch_size
+        total_enpys += torch.mean(c0_entropy).item() * batch_size
+        report_diff_losses += differentiated_loss.item() * batch_size
+        report_disc_losses += d_loss.item() * batch_size
+        report_enpys += torch.mean(c0_entropy).item() * batch_size
+        report_c0_losses += torch.mean(cs_losses[0]).item() * batch_size
         for _i in range(config['hop']):
             # for print
             attns_datas[_i] += [cs_attns[_i].cpu().data]
             prob_pred_datas[_i] += [cs_outputs[_i].cpu().data]
             losses_datas[_i] += [cs_losses[_i].cpu().data]
             
-            right = (y_data.squeeze(1)==cs_outputs[_i].max(1)[1]).sum().data[0]
-            loss_float = cs_losses[_i].data[0]
+            right = (y_data.squeeze(1)==cs_outputs[_i].max(1)[1]).sum().item()
+            loss_float = cs_losses[_i].squeeze(1).mean().item()
 
             total_right_counts[_i] += right
             total_losses[_i] += loss_float*batch_size
@@ -404,8 +407,8 @@ def train_epoch(epoch, optims, models, train_data,
             total_ratios[_i] += gold_c_num
 
         # discriminator
-        right = (loss_dis.max(1)[1]==d_outputs.max(1)[1]).sum().data[0]
-        loss_float = d_loss.data[0]
+        right = (loss_dis.max(1)[1]==d_outputs.max(1)[1]).sum().item()
+        loss_float = d_loss.item()
         total_right_counts[_i + 1] += right
         total_losses[_i + 1] += loss_float*batch_size
 
@@ -426,9 +429,9 @@ def train_epoch(epoch, optims, models, train_data,
                 report_ratios[_i] = 0
             _s += (' (ratio%s); ' % ratio)
             report_count = 0.0
-            print "Epoch %2d %3d/%3d;%s%4.0fs elapsed" %\
+            print("Epoch %2d %3d/%3d;%s%4.0fs elapsed" %\
             (epoch, i+1, len(train_data), _s,
-                time.time()-start_time)
+                time.time()-start_time))
 
     # 平均化
     total_diff_loss = total_diff_losses / total_count
@@ -455,7 +458,7 @@ def train_epoch(epoch, optims, models, train_data,
 
 def train_models(models, train_data, valid_data, test_data, dicts, optims, writer):
 
-    print '\nBegin training...'
+    print('\nBegin training...')
 
     best_valid_acc, best_valid_test_acc, best_epoch = 0, 0, -1
     best_valid_acc1, best_valid_test_acc1, best_epoch1 = 0, 0, -1
@@ -468,24 +471,24 @@ def train_models(models, train_data, valid_data, test_data, dicts, optims, write
                                 train_data, dicts['id2token'], start_time,
                                 flag=config['flag']+'_train')
 
-        merge_score = merge_res(train_res)
+        merge_score, _, _ = merge_res(train_res)
 
-        print 'Train: diff %7.4f, disc %6.4f, enpy %6.4f, tol %6.4f, (pred_ratio %s)' % (
+        print('Train: diff %7.4f, disc %6.4f, enpy %6.4f, tol %6.4f, (pred_ratio %s)' % (
                         train_diff_loss,
                         train_disc_loss,
                         -config['enpy']*train_enpy,
                         train_diff_loss+train_disc_loss-config['enpy']*train_enpy,
-                        ' '.join(['%4.3f'%(train_pred_nums[x]) for x in train_pred_nums if x != 0 and x != config['hop']]))
+                        ' '.join(['%4.3f'%(train_pred_nums[x]) for x in train_pred_nums if x != 0 and x != config['hop']])))
 
         _s = ''
         for _i in range(config['hop'] + 1):
                 _flag = 'D' if _i == config['hop'] else 'C%d'%_i # format output
                 _s += ' %s %5.4f,' % (_flag, train_total_rights[_i])
 
-        print '       acc %s (ratio %s), sum %6.4f' % (_s, 
+        print('       acc %s (ratio %s), sum %6.4f' % (_s,
                         ' '.join(['%4.3f'%(train_ratios[x]) for x in train_ratios if x != 0 and x != config['hop']]),
                         merge_score
-                        )
+                        ))
 
         if config['visualize']:
             writer.add_scalars('train_data/loss', {"diff":train_diff_loss,
@@ -500,32 +503,33 @@ def train_models(models, train_data, valid_data, test_data, dicts, optims, write
                                              "sum":merge_score},
                                              epoch)
 
-        (valid_diff_loss, valid_disc_loss, valid_enpy, valid_total_rights, valid_ratios,
-                valid_pred_nums, valid_pred_chooses, valid_res) = \
-                            eval(epoch, models, valid_data,
-                            dicts['id2token'], flag=config['flag']+'_valid')
+        with torch.no_grad():
+            (valid_diff_loss, valid_disc_loss, valid_enpy, valid_total_rights, valid_ratios,
+                    valid_pred_nums, valid_pred_chooses, valid_res) = \
+                                eval(epoch, models, valid_data,
+                                dicts['id2token'], flag=config['flag']+'_valid')
 
-        valid_merge_score, (valid_merge_score5, oracle_score, _) = merge_res(valid_res),\
+        (valid_merge_score, _, _), (valid_merge_score5, oracle_score, _, _, _) = merge_res(valid_res),\
                                         merge_res5(valid_res, valid_pred_chooses, 0.5)
 
-        print 'Valid: diff %7.4f, disc %6.4f, enpy %6.4f, tol %6.4f, (pred_ratio %s)' % (
+        print('Valid: diff %7.4f, disc %6.4f, enpy %6.4f, tol %6.4f, (pred_ratio %s)' % (
                         valid_diff_loss,
                         valid_disc_loss,
                         -config['enpy']*valid_enpy,
                         valid_diff_loss+valid_disc_loss-config['enpy']*valid_enpy,
-                        ' '.join(['%4.3f'%(valid_pred_nums[x]) for x in valid_pred_nums if x != 0 and x != config['hop']]))
+                        ' '.join(['%4.3f'%(valid_pred_nums[x]) for x in valid_pred_nums if x != 0 and x != config['hop']])))
 
         _s = ''
         for _i in range(config['hop'] + 1):
                 _flag = 'D' if _i == config['hop'] else 'C%d'%_i # format output
                 _s += ' %s %5.4f,' % (_flag, valid_total_rights[_i])
 
-        print '       acc %s (ratio %s), sum %5.4f, all %5.4f, orak %5.4f' % (_s, 
+        print('       acc %s (ratio %s), sum %5.4f, all %5.4f, orak %5.4f' % (_s,
                         ' '.join(['%4.3f'%(valid_ratios[x]) for x in valid_ratios if x != 0 and x != config['hop']]),
                         valid_merge_score,
                         valid_merge_score5,
                         oracle_score
-                        )
+                        ))
 
         if config['visualize']:
             writer.add_scalars('valid_data/loss', {"diff":valid_diff_loss,
@@ -541,45 +545,51 @@ def train_models(models, train_data, valid_data, test_data, dicts, optims, write
                                             "tol":valid_merge_score5},
                                              epoch)
 
-        (test_diff_loss, test_disc_loss, test_enpy, test_total_rights, test_ratios,
-                test_pred_nums, test_pred_chooses, test_res) = \
-                            eval(epoch, models, test_data,
-                            dicts['id2token'], flag=config['flag']+'_test')
+        with torch.no_grad():
+            (test_diff_loss, test_disc_loss, test_enpy, test_total_rights, test_ratios,
+                    test_pred_nums, test_pred_chooses, test_res) = \
+                                eval(epoch, models, test_data,
+                                dicts['id2token'], flag=config['flag']+'_test')
 
-        test_merge_score, (test_merge_score5, oracle_score, _) = merge_res(test_res),\
+        (test_merge_score, test_merge_balanced_acc, test_merge_macro_f1), (test_merge_score5, oracle_score, _, test_merge5_balanced_acc, test_merge5_macro_f1) = merge_res(test_res),\
                                         merge_res5(test_res, test_pred_chooses, 0.5)
 
-        print ' Test: diff %7.4f, disc %6.4f, enpy %6.4f, tol %6.4f, (pred_ratio %s)' % (
+        print(' Test: diff %7.4f, disc %6.4f, enpy %6.4f, tol %6.4f, (pred_ratio %s)' % (
                         test_diff_loss,
                         test_disc_loss,
                         -config['enpy']*test_enpy,
                         test_diff_loss+test_disc_loss-config['enpy']*test_enpy,
-                        ' '.join(['%4.3f'%(test_pred_nums[x]) for x in test_pred_nums if x != 0 and x != config['hop']]))
+                        ' '.join(['%4.3f'%(test_pred_nums[x]) for x in test_pred_nums if x != 0 and x != config['hop']])))
+        print('merged b. acc.: {:.4f}, merged macro f1: {:.4f}, merged5 b. acc.: {:.4f}, merged5 macro f1: {:.4f}'.format(test_merge_balanced_acc, test_merge_macro_f1, test_merge5_balanced_acc, test_merge5_macro_f1))
 
         _s = ''
         for _i in range(config['hop'] + 1):
                 _flag = 'D' if _i == config['hop'] else 'C%d'%_i # format output
                 _s += ' %s %5.4f,' % (_flag, test_total_rights[_i])
 
-        print '       acc %s (ratio %s), sum %5.4f, all %5.4f, orak %5.4f' % (_s, 
+        print('       acc %s (ratio %s), sum %5.4f, all %5.4f, orak %5.4f' % (_s,
                         ' '.join(['%4.3f'%(test_ratios[x]) for x in test_ratios if x != 0 and x != config['hop']]),
                         test_merge_score,
                         test_merge_score5,
                         oracle_score
-                        )
+                        ))
 
-        print ''
+        print()
 
 
         if valid_merge_score >= best_valid_acc:
             best_valid_acc = valid_merge_score
             best_epoch = epoch
             best_valid_test_acc = test_merge_score
+            best_valid_test_balanced_acc = test_merge_balanced_acc
+            best_valid_test_macro_f1 = test_merge_macro_f1
 
         if valid_merge_score5 >= best_valid_acc1:
             best_valid_acc1 = valid_merge_score5
             best_epoch1 = epoch
             best_valid_test_acc1 = test_merge_score5
+            best_valid_test_balanced_acc_merge5 = test_merge5_balanced_acc
+            best_valid_test_macro_f1_merge5 = test_merge5_macro_f1
 
             # models_dict = {}
             # for m in models:
@@ -603,12 +613,14 @@ def train_models(models, train_data, valid_data, test_data, dicts, optims, write
         writer.export_scalars_to_json("./runs/all_scalars.json")
         writer.close()
 
-    print 'SUM-MAX  -> epoch%2d'%best_epoch
-    print '* Best valid acc.: %5.4f'%best_valid_acc
-    print '* Test accuracy with best valid acc.: %5.4f'%best_valid_test_acc
-    print 'CLS-PICK -> epoch%2d'%best_epoch1
-    print '* Best valid acc.: %5.4f'%best_valid_acc1
-    print '* Test accuracy with best valid acc.: %5.4f'%best_valid_test_acc1
+    print('SUM-MAX  -> epoch%2d'%best_epoch)
+    print('* Best valid acc.: %5.4f'%best_valid_acc)
+    print('* Test accuracy with best valid acc.: %5.4f'%best_valid_test_acc)
+    print('balanced acc: {:.4f}, macro f1: {:.4f}'.format(best_valid_test_balanced_acc, best_valid_test_macro_f1))
+    print('CLS-PICK -> epoch%2d'%best_epoch1)
+    print('* Best valid acc.: %5.4f'%best_valid_acc1)
+    print('* Test accuracy with best valid acc.: %5.4f'%best_valid_test_acc1)
+    print('balanced acc: {:.4f}, macro f1: {:.4f}'.format(best_valid_test_balanced_acc_merge5, best_valid_test_macro_f1_merge5))
 
 
 def main():
@@ -623,9 +635,9 @@ def main():
                             volatile=True)
 
     dicts = dataset['vocab']
-    print ' * vocabulary size %d' % dicts['size']
-    print ' * number of training sentences %d' % len(dataset['train'][0])
-    print ' * maximum batch size. %d' % config['batch_size']
+    print(' * vocabulary size %d' % dicts['size'])
+    print(' * number of training sentences %d' % len(dataset['train'][0]))
+    print(' * maximum batch size. %d' % config['batch_size'])
 
     print('Building model...')
     
@@ -660,7 +672,7 @@ def main():
             p.data.uniform_(-config['param_init'], config['param_init'])
 
     tolParams = nmemParams + nsubParams + nconParams + ndisParams
-    print '* number of total parameters: %d' % tolParams
+    print('* number of total parameters: %d' % tolParams)
 
     # use it after the parameter initialization
     if config['pre_word_vecs'] != 'None':

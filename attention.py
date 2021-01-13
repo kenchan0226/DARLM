@@ -90,7 +90,8 @@ class RecursiveAttention(nn.Module):
         self.tanh = nn.Tanh()
 
     def getMask(self, batch_size, lens, time):
-        mask = torch.ByteTensor(batch_size, time).fill_(1)
+        #mask = torch.ByteTensor(batch_size, time).fill_(1)
+        mask = torch.BoolTensor(batch_size, time).fill_(1)
         for i in range(batch_size):
             max_len = time if time < (lens[i] - 1) else lens[i] - 1
             for j in range(max_len):

@@ -20,7 +20,8 @@ class GlobalAttention(nn.Module):
         self.tanh = nn.Tanh()
 
     def getMask(self, batch_size, lens):
-        mask = torch.ByteTensor(batch_size, max(lens)).fill_(1)
+        #mask = torch.ByteTensor(batch_size, max(lens)).fill_(1)
+        mask = torch.BoolTensor(batch_size, max(lens)).fill_(1)
         for i in range(batch_size):
             for j in range(lens[i]):
                 mask[i][j] = 0 # mask 中为1的

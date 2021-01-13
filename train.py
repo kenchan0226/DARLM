@@ -100,7 +100,7 @@ def eval(epoch, models, data, id2token_dict, flag=None):
     res_data = []
     total_losses = {}
     total_diff_losses, total_disc_losses, total_enpys = 0.0, 0.0, 0.0
-    total_count = 0.0
+    total_count = 0
     total_right_counts = {}
     report_ratios = {}
     total_ratios = {}
@@ -273,11 +273,11 @@ def train_epoch(epoch, optims, models, train_data,
     res_data = []
     total_losses = {}
     total_diff_losses, total_disc_losses, total_enpys = 0.0, 0.0, 0.0
-    total_count = 0.0
+    total_count = 0
     total_right_counts = {}
     report_losses = {}
     report_diff_losses, report_disc_losses, report_enpys = 0.0, 0.0, 0.0
-    report_count = 0.0
+    report_count = 0
     report_right_counts = {}
     report_ratios = {}
     total_ratios = {}
@@ -405,9 +405,6 @@ def train_epoch(epoch, optims, models, train_data,
             gold_c_num = (loss_dis.data.max(1)[1] == _i).sum()
             report_ratios[_i] += gold_c_num
             total_ratios[_i] += gold_c_num
-            print("debug")
-            print(total_ratios[_i])
-            exit()
 
         # discriminator
         right = (loss_dis.max(1)[1]==d_outputs.max(1)[1]).sum().item()

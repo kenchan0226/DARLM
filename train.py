@@ -405,6 +405,9 @@ def train_epoch(epoch, optims, models, train_data,
             gold_c_num = (loss_dis.data.max(1)[1] == _i).sum()
             report_ratios[_i] += gold_c_num
             total_ratios[_i] += gold_c_num
+            print("debug")
+            print(total_ratios[_i])
+            exit()
 
         # discriminator
         right = (loss_dis.max(1)[1]==d_outputs.max(1)[1]).sum().item()
